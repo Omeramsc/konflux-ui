@@ -1,3 +1,4 @@
+import { QueryKey } from '@tanstack/react-query';
 import { PipelineRunLabel, PipelineRunType } from '~/consts/pipelinerun';
 import { CONFORMA_TASK, EC_TASK } from '~/consts/security';
 import { convertToK8sQueryParams } from '~/k8s/k8s-utils';
@@ -43,7 +44,7 @@ export const buildConformaSecurityTaskRunWatchOptions = (
 export const buildConformaSecurityTaskRunQueryKey = (
   namespace: string,
   applicationName: string,
-): unknown[] =>
+): QueryKey =>
   createQueryKeys({
     model: TaskRunModel,
     queryOptions: convertToK8sQueryParams(

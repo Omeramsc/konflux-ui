@@ -59,7 +59,7 @@ export type ConformaResult = {
   components: ComponentConformaResult[];
 };
 
-export type UIConformaData = {
+export type ConformaResultRow = {
   title: string;
   description: string;
   status: CONFORMA_RESULT_STATUS;
@@ -72,8 +72,6 @@ export type UIConformaData = {
   /** Policy rule code — stable identifier used as primary group key. Optional for backward-compat. */
   code?: string;
 };
-
-export type ConformaResultRow = UIConformaData;
 
 export type ComponentConformaStatus = {
   componentName: string;
@@ -106,5 +104,6 @@ export type ApplicationConformaResults = {
   loaded: boolean;
   settling: boolean;
   error: unknown;
+  partialLogErrors?: unknown[];
   refresh: ConformaRefreshState;
 };

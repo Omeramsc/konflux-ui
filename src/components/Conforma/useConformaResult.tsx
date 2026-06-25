@@ -2,10 +2,11 @@ import * as React from 'react';
 import { CONFORMA_TASK, EC_TASK } from '~/consts/security';
 import { useIsOnFeatureFlag } from '~/feature-flags/hooks';
 import { usePipelineRunV2 } from '~/hooks/usePipelineRunsV2';
+import { logger } from '~/monitoring/logger';
 import {
   ComponentConformaResult,
   ConformaResult,
-  UIConformaData,
+  ConformaResultRow,
 } from '~/types/conforma';
 import { isResourceEnterpriseContract } from '~/utils/conforma-utils';
 import { isTaskRunInPipelineRun } from '~/utils/pipeline-utils';
@@ -66,6 +67,9 @@ export const useConformaResultFromLogs = (
     const currentTaskRun = taskRunRef.current;
     if (!currentTaskRun) return;
 
+    setCrJson(undefined);
+    setCrLoaded(false);
+
     let cancelled = false;
     resolveConformaResultFromTaskRun(namespace, currentTaskRun, isKubearchiveEnabled)
       .then((result) => {
@@ -74,7 +78,8 @@ export const useConformaResultFromLogs = (
           setCrLoaded(true);
         }
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        logger.warn('Failed to resolve Conforma result from TaskRun', { error: err });
         if (!cancelled) setCrLoaded(true);
       });
 
@@ -104,7 +109,7 @@ export const useConformaResultFromLogs = (
 
 export const useConformaResult = (
   pipelineRunName: string,
-): [UIConformaData[], boolean, unknown] => {
+): [ConformaResultRow[] | undefined, boolean, unknown] => {
   const [cr, crLoaded, crError] = useConformaResultFromLogs(pipelineRunName);
   const conformaResult = React.useMemo(() => {
     return crLoaded && cr && !crError ? mapConformaResultData(cr) : undefined;

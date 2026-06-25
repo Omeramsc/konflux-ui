@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { CONFORMA_RESULT_STATUS } from '~/types/conforma';
 import type { ConformaResultRow } from '~/types/conforma';
 import { routerRenderer } from '~/unit-test-utils/mock-react-router';
@@ -97,8 +97,8 @@ describe('ConformaGroupedTable', () => {
     const onToggle = jest.fn();
     routerRenderer(<ConformaGroupedTable {...defaultProps} onToggleGroup={onToggle} />);
 
-    const toggleButtons = screen.getAllByRole('button');
-    fireEvent.click(toggleButtons[0]);
+    const firstExpandCell = screen.getAllByTestId('conforma-expand-toggle')[0];
+    fireEvent.click(within(firstExpandCell).getByRole('button'));
 
     expect(onToggle).toHaveBeenCalledWith('Missing CVE scan');
   });

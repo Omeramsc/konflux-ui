@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useParams } from 'react-router-dom';
 import {
+  Alert,
   Bullseye,
   PageSection,
   PageSectionVariants,
@@ -9,8 +10,7 @@ import {
   TextContent,
   Title,
 } from '@patternfly/react-core';
-import { FilterContext, FilterContextProvider } from '~/components/Filter/generic/FilterContext';
-import { useDeepCompareMemoize } from '~/shared';
+import { FilterContextProvider } from '~/components/Filter/generic/FilterContext';
 import { getErrorState } from '~/shared/utils/error-utils';
 import type { GroupByMode } from './conforma-grouping-utils';
 import { filterResults, groupByComponent, groupByRule } from './conforma-grouping-utils';
@@ -18,6 +18,7 @@ import { ConformaGroupedTable } from './ConformaGroupedTable';
 import { ConformaResultsToolbar } from './ConformaResultsToolbar';
 import { ConformaSummaryBar } from './ConformaSummaryBar';
 import { useApplicationConformaResults } from './useApplicationConformaResults';
+import { useConformaFilters } from './useConformaFilters';
 import './ConformaResultsTab.scss';
 
 /**
@@ -37,15 +38,11 @@ const ConformaResultsTabContent: React.FC = () => {
     totalSuccesses,
     loaded,
     error,
+    partialLogErrors,
     refresh,
   } = useApplicationConformaResults(applicationName);
 
-  const { filters: unparsedFilters } = React.useContext(FilterContext);
-  const filters = useDeepCompareMemoize({
-    name: unparsedFilters.name ? (unparsedFilters.name as string) : '',
-    status: unparsedFilters.status ? (unparsedFilters.status as string[]) : [],
-  });
-  const { name: nameFilter, status: statusFilter } = filters;
+  const { name: nameFilter, status: statusFilter } = useConformaFilters();
 
   const [groupBy, setGroupBy] = React.useState<GroupByMode>('rule');
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
@@ -140,6 +137,14 @@ const ConformaResultsTabContent: React.FC = () => {
       </PageSection>
 
       <PageSection isFilled padding={{ default: 'noPadding' }}>
+        {partialLogErrors && partialLogErrors.length > 0 && (
+          <Alert
+            variant="warning"
+            isInline
+            title={`${partialLogErrors.length} component(s) could not load Conforma results`}
+            data-test="conforma-partial-error-alert"
+          />
+        )}
         <ConformaResultsToolbar
           allResults={allResults}
           groupBy={groupBy}

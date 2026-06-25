@@ -47,6 +47,7 @@ const EMPTY_RESULTS: ApplicationConformaResults = {
   loaded: false,
   settling: false,
   error: undefined,
+  partialLogErrors: undefined,
   refresh: NO_OP_REFRESH,
 };
 
@@ -86,8 +87,10 @@ export const useApplicationConformaResults = (
     applicationName,
   );
 
-  // Shared watch options — used by both useTaskRunsV2 (selector) and the
-  // direct useK8sWatchResource below so both operations share the same cache.
+  // Shared watch options — useTaskRunsV2 uses these for data fetching while the
+  // direct useK8sWatchResource below uses the same options so both share the same
+  // React Query cache key, enabling metadata (isFetching/dataUpdatedAt/isWatchDegraded)
+  // to be read without a second network request.
   const watchOptions = React.useMemo(
     () =>
       namespace?.length
@@ -109,9 +112,8 @@ export const useApplicationConformaResults = (
     { selector: watchOptions?.selector },
   );
 
-  // Direct subscription to get query metadata (dataUpdatedAt, isFetching,
-  // isWatchDegraded) for the refresh UI. React Query deduplicates the HTTP
-  // request because useTaskRunsV2 already uses the same query key internally.
+  // ponytail: double-subscription — remove when useTaskRunsV2 exposes isFetching/dataUpdatedAt/isWatchDegraded
+  // React Query deduplicates the HTTP request; the second sub exists only to read query metadata.
   const taskRunClusterQuery = useK8sWatchResource<TaskRunKind[]>(
     watchOptions,
     TaskRunModel,
@@ -168,19 +170,26 @@ export const useApplicationConformaResults = (
     [latestPerComponent],
   );
 
-  const { logData, allSettled, aggregatedLogError } = useQueries({
+  const { logData, allSettled, aggregatedLogError, partialLogErrors } = useQueries({
     queries: latestTaskRuns.map((tr) => ({
       queryKey: ['conforma-log', namespace, tr.metadata?.uid, isKubearchiveLogsEnabled] as const,
       queryFn: () => resolveConformaResultFromTaskRun(namespace, tr, isKubearchiveLogsEnabled),
       staleTime: Infinity,
       enabled: !!namespace && !!tr.metadata?.uid,
     })),
-    combine: (results) => ({
-      logData: results.map((q) => q.data),
-      allSettled: results.every((q) => !q.isLoading),
-      aggregatedLogError:
-        results.length > 0 && results.every((q) => q.isError) ? results[0].error : undefined,
-    }),
+    combine: (results) => {
+      const failedResults = results.filter((q) => q.isError);
+      return {
+        logData: results.map((q) => q.data),
+        allSettled: results.every((q) => !q.isLoading),
+        aggregatedLogError:
+          results.length > 0 && results.every((q) => q.isError) ? results[0].error : undefined,
+        partialLogErrors:
+          failedResults.length > 0 && !results.every((q) => q.isError)
+            ? failedResults.map((q) => q.error)
+            : undefined,
+      };
+    },
   });
 
   const loaded = Boolean(
@@ -281,6 +290,7 @@ export const useApplicationConformaResults = (
       loaded,
       settling,
       error: aggregateError,
+      partialLogErrors,
       refresh,
     };
   }, [
@@ -292,6 +302,7 @@ export const useApplicationConformaResults = (
     settling,
     logData,
     namespace?.length,
+    partialLogErrors,
     refresh,
   ]);
 };

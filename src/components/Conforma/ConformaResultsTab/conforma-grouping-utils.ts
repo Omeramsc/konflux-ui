@@ -83,7 +83,12 @@ export const filterResults = (
   statusFilters: string[],
 ): ConformaResultRow[] =>
   results.filter((row) => {
-    if (searchText && !textMatch(row.title, searchText) && !textMatch(row.component, searchText)) {
+    if (
+      searchText &&
+      !textMatch(row.title, searchText) &&
+      !textMatch(row.component, searchText) &&
+      !textMatch(row.code, searchText)
+    ) {
       return false;
     }
 

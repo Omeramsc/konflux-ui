@@ -204,6 +204,20 @@ describe('ConformaResultsTab', () => {
     expect(screen.queryAllByText('Test message').length).toBe(0);
   });
 
+  it('shows a partial error alert when partialLogErrors is set', () => {
+    mockUseApplicationConformaResults.mockReturnValue({
+      ...emptyResults,
+      partialLogErrors: [new Error('log fetch failed')],
+    });
+
+    routerRenderer(<ConformaResultsTab />);
+
+    expect(screen.getByTestId('conforma-partial-error-alert')).toBeInTheDocument();
+    expect(
+      screen.getByText('1 component(s) could not load Conforma results'),
+    ).toBeInTheDocument();
+  });
+
   it('shows "no results match" when filters exclude all results', () => {
     jest.useFakeTimers();
     mockUseApplicationConformaResults.mockReturnValue(populatedResults);

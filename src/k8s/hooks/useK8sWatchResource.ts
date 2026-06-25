@@ -58,5 +58,6 @@ export const useK8sWatchResource = <R extends K8sResourceCommon | K8sResourceCom
   };
 
   const query = useQuery<R>(getQueryOptions());
-  return { ...query, isWatchDegraded: wsError !== null };
+  const isWatchDegraded = wsError !== null;
+  return Object.assign(Object.create(query as object) as K8sWatchResult<R>, { isWatchDegraded });
 };

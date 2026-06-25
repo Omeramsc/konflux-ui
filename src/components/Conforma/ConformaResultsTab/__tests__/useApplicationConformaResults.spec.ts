@@ -678,6 +678,28 @@ describe('useApplicationConformaResults', () => {
     expect(result.current.error).toBeUndefined();
   });
 
+  it('populates partialLogErrors when some but not all component queries fail', async () => {
+    const components = [createComponent('comp-a'), createComponent('comp-b')];
+    const taskRuns = [
+      createSecurityTaskRun('tr-1', 'comp-a', 'pod-1'),
+      createSecurityTaskRun('tr-2', 'comp-b', 'pod-2'),
+    ];
+    mockUseComponents.mockReturnValue([components, true, undefined]);
+    mockUseTaskRunsV2.mockReturnValue([taskRuns, true, undefined, jest.fn(), {}]);
+    mockResolveConforma
+      .mockResolvedValueOnce(mockConformaResult)
+      .mockRejectedValueOnce(new Error('network error'));
+
+    const { result } = renderHook(() => useApplicationConformaResults('test-app'), {
+      wrapper: createWrapper(),
+    });
+
+    await flushEffects();
+
+    expect(result.current.partialLogErrors).toHaveLength(1);
+    expect(result.current.partialLogErrors?.[0]).toBeInstanceOf(Error);
+  });
+
   it('sets error when all component queries fail', async () => {
     const components = [createComponent('comp-a'), createComponent('comp-b')];
     const taskRuns = [

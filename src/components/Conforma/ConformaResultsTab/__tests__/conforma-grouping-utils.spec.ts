@@ -230,5 +230,27 @@ describe('conforma-grouping-utils', () => {
     it('returns empty array for empty input', () => {
       expect(filterResults([], 'test', [])).toHaveLength(0);
     });
+
+    it('filters by search text matching code (case-insensitive)', () => {
+      const rowsWithCode = [
+        mockRow({ title: 'Missing CVE scan', code: 'cve.missing_scan', component: 'api-gateway' }),
+        mockRow({ title: 'Base image allowed', code: 'base.image_allowed', component: 'auth-service' }),
+        mockRow({ title: 'Deprecated API usage', component: 'cache-service' }),
+      ];
+
+      const results = filterResults(rowsWithCode, 'CVE.MISSING', []);
+      expect(results).toHaveLength(1);
+      expect(results[0].code).toBe('cve.missing_scan');
+    });
+
+    it('does not filter out rows whose code is undefined when searching by title', () => {
+      const rowsWithMixedCode = [
+        mockRow({ title: 'Missing CVE scan', code: 'cve.missing_scan', component: 'api-gateway' }),
+        mockRow({ title: 'Another CVE rule', component: 'auth-service' }),
+      ];
+
+      const results = filterResults(rowsWithMixedCode, 'CVE', []);
+      expect(results).toHaveLength(2);
+    });
   });
 });
